@@ -20,6 +20,8 @@
 package ctlcmd
 
 import (
+	"fmt"
+
 	"github.com/snapcore/snapd/i18n"
 )
 
@@ -39,6 +41,7 @@ type removeCommand struct {
 	Positional struct {
 		Names []string `positional-arg-name:"<snap|snap+comp|+comp>" required:"yes" description:"Components to be removed (snap must be the caller snap if specified)."`
 	} `positional-args:"yes"`
+	NoWait bool `long:"no-wait" description:"Returns immediately without waiting for the operation to complete, returning a change number."`
 }
 
 func (c *removeCommand) Execute([]string) error {
@@ -52,9 +55,13 @@ func (c *removeCommand) Execute([]string) error {
 		return err
 	}
 
-	if err := runSnapManagementCommand(ctx, managementCommand{
-		operation: removeManagementCommand, components: comps}); err != nil {
+	changeID, err := runSnapManagementCommand(ctx, managementCommand{operation: removeManagementCommand, components: comps}, c.NoWait)
+	if err != nil {
 		return err
+	}
+
+	if c.NoWait {
+		fmt.Fprintf(c.stdout, "%s\n", changeID)
 	}
 
 	return nil
