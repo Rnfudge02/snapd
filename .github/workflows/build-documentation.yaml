@@ -56,3 +56,10 @@ jobs:
         with:
           name: openapi-spec
           path: docs/api/openapi.json
+      
+      - name: Trigger Snap-docs OpenAPI build
+        run: |
+          curl -X POST -H "Authorization: Bearer ${{ secrets.RTD_PAT }}" \
+          https://api.github.com \
+          -d '{"event_type":"openapi-updated"}'
+          
