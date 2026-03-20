@@ -3,8 +3,9 @@
 
 name: Prepare the REST OpenAPI Specification
 on:
-  workflow_dispatch:
   pull_request:
+  push:
+    branches: [ master ]
 
 jobs:
   check-api:
@@ -51,15 +52,12 @@ jobs:
         with:
           args: bundle ./docs/api/openapi.yaml --output ./docs/api/openapi.json --ext json
 
-      - name: Store generated JSON artifact
-        uses: actions/upload-artifact@v6
+      - name: Dispatch OpenAPI Update via Action
+        uses: peter-evans/repository-dispatch@v3
         with:
-          name: openapi-spec
-          path: docs/api/openapi.json
+          repository: canonical/snapd-docs
+          token: ${{ secrets.SNAP_DOCS_INT_PAT }}
+          event-type: openapi-updated
+          client-payload: '{"snapd_branch": "${{ github.ref_name }}"}'
       
-      - name: Trigger Snap-docs OpenAPI build
-        run: |
-          curl -X POST -H "Authorization: Bearer ${{ secrets.RTD_PAT }}" \
-          https://api.github.com \
-          -d '{"event_type":"openapi-updated"}'
           
