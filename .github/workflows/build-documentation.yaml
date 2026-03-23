@@ -36,7 +36,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Check Licensing/Copyright Compliance
+      - name: Check licensing/copyright compliance
         uses: docker://fsfe/reuse
         with:
           entrypoint: /bin/sh
@@ -52,12 +52,7 @@ jobs:
         with:
           args: bundle ./docs/api/openapi.yaml --output ./docs/api/openapi.json --ext json
 
-      - name: Dispatch OpenAPI Update via Action
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          repository: canonical/snapd-docs
-          token: ${{ secrets.SNAP_DOCS_INT_PAT }}
-          event-type: openapi-updated
-          client-payload: '{"snapd_branch": "${{ github.ref_name }}"}'
-      
-          
+      - name: Dispatch OpenAPI update via custom event
+        run: |
+          gh api repos/canonical/snapd/dispatches \
+            -f event_type=api-updated
