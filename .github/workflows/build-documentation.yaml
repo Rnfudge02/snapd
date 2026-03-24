@@ -27,7 +27,7 @@ jobs:
   process-specification:
     needs: check-api
     if: |
-      ${{ github.ref == 'refs/heads/master' || needs.check-api.outputs.api_changed == 'true' }} 
+      github.ref == 'refs/heads/master' || needs.check-api.outputs.api_changed == 'true'
     runs-on: ubuntu-latest
     name: Bundle REST API documentation
     
