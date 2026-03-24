@@ -54,5 +54,5 @@ jobs:
 
       - name: Dispatch OpenAPI update via custom event
         run: |
-          gh api repos/canonical/snapd/dispatches \
+          gh api repos/canonical/snap-docs/dispatches \
             -f event_type=api-updated
