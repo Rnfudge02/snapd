@@ -50,7 +50,7 @@ jobs:
         uses: docker://redocly/cli
         with:
           args: bundle ./docs/api/openapi.yaml --output ./docs/api/openapi.json --ext json
-      
+
       - name: Store generated JSON artifact
         uses: actions/upload-artifact@v6
         with:
