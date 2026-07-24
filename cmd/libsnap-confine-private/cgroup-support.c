@@ -78,10 +78,10 @@ bool sc_cgroup_is_v2(void) {
     struct statfs buf;
 
     if (statfs(cgroup_dir, &buf) != 0) {
-        if (errno == ENOENT) {
-            return false;
+        if (errno != ENOENT) {
+            die("cannot statfs %s", cgroup_dir);
         }
-        die("cannot statfs %s", cgroup_dir);
+        return false;
     }
     if (buf.f_type == CGROUP2_SUPER_MAGIC) {
         return true;

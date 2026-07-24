@@ -53,12 +53,12 @@ bool sc_feature_enabled(sc_feature_flag flag) {
     }
 
     struct stat file_info;
-    if (fstatat(dirfd, file_name, &file_info, AT_SYMLINK_NOFOLLOW) < 0) {
-        if (errno == ENOENT) {
-            return false;
-        }
+    bool result = false;
+    if (fstatat(dirfd, file_name, &file_info, AT_SYMLINK_NOFOLLOW) >= 0) {
+        result = S_ISREG(file_info.st_mode);
+    } else if (errno != ENOENT) {
         die("cannot inspect file %s/%s", feature_flag_dir, file_name);
     }
 
-    return S_ISREG(file_info.st_mode);
+    return result;
 }

@@ -45,14 +45,13 @@ sc_distro sc_classify_distro(void) {
         }
     }
 
+    sc_distro result;
     if (is_core) {
-        if (core_version == 16) {
-            return SC_DISTRO_CORE16;
-        }
-        return SC_DISTRO_CORE_OTHER;
+        result = (core_version == 16) ? SC_DISTRO_CORE16 : SC_DISTRO_CORE_OTHER;
     } else {
-        return SC_DISTRO_CLASSIC;
+        result = SC_DISTRO_CLASSIC;
     }
+    return result;
 }
 
 bool sc_is_debian_like(void) {
@@ -65,20 +64,22 @@ bool sc_is_debian_like(void) {
         "ID_LIKE", /* distros based on debian */
     };
     size_t id_keys_to_try_len = SC_ARRAY_SIZE(id_keys_to_try);
+    bool result = false;
     for (size_t i = 0; i < id_keys_to_try_len; i++) {
         if (fseek(f, 0L, SEEK_SET) == -1) {
-            return false;
+            break;
         }
         char *id_val SC_CLEANUP(sc_cleanup_string) = NULL;
         struct sc_error *err SC_CLEANUP(sc_cleanup_error) = NULL;
         int rc = sc_infofile_get_key(f, id_keys_to_try[i], &id_val, &err);
         if (rc != 0) {
             /* only if sc_infofile_get_key failed */
-            return false;
+            break;
         }
         if (sc_streq(id_val, "\"debian\"") || sc_streq(id_val, "debian")) {
-            return true;
+            result = true;
+            break;
         }
     }
-    return false;
+    return result;
 }
