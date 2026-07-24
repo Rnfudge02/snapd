@@ -252,11 +252,10 @@ static int load_devcgroup_prog(int map_fd, const char *name) {
 }
 
 static void _sc_cleanup_v2_device_key(sc_cgroup_v2_device_key **keyptr) {
-    if (keyptr == NULL || *keyptr == NULL) {
-        return;
+    if (keyptr != NULL && *keyptr != NULL) {
+        free(*keyptr);
+        *keyptr = NULL;
     }
-    free(*keyptr);
-    *keyptr = NULL;
 }
 
 static void _sc_cgroup_v2_set_memlock_limit(struct rlimit limit) {
@@ -670,11 +669,10 @@ static void sc_device_cgroup_close(sc_device_cgroup *self) {
 }
 
 void sc_device_cgroup_cleanup(sc_device_cgroup **self) {
-    if (*self == NULL) {
-        return;
+    if (*self != NULL) {
+        sc_device_cgroup_close(*self);
+        *self = NULL;
     }
-    sc_device_cgroup_close(*self);
-    *self = NULL;
 }
 
 int sc_device_cgroup_allow(sc_device_cgroup *self, int kind, int major, int minor) {

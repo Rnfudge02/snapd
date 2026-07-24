@@ -73,39 +73,39 @@ void sc_init_apparmor_support(struct sc_apparmor *apparmor) {
         }
         apparmor->is_confined = false;
         apparmor->mode = SC_AA_NOT_APPLICABLE;
-        return;
-    }
-    // Use aa_getcon() to check the label of the current process and
-    // confinement type. Note that the returned label must be released with
-    // free() but the mode is a constant string that must not be freed.
-    char *label SC_CLEANUP(sc_cleanup_string) = NULL;
-    char *mode = NULL;
-    if (aa_getcon(&label, &mode) < 0) {
-        die("cannot query current apparmor profile");
-    }
-    debug("apparmor label on snap-confine is: %s", label);
-    debug("apparmor mode is: %s", mode);
-    // expect to be confined by a profile with the name of a valid
-    // snap-confine binary since if not we may be executed under a
-    // profile with more permissions than expected
-    bool confined_mode = sc_streq(mode, SC_AA_ENFORCE_STR) || sc_streq(mode, SC_AA_KILL_STR);
-    if (label != NULL && confined_mode && sc_is_expected_path(label)) {
-        apparmor->is_confined = true;
     } else {
-        apparmor->is_confined = false;
-    }
-    // There are several possible results for the confinement type (mode) that
-    // are checked for below.
-    if (mode != NULL && strcmp(mode, SC_AA_COMPLAIN_STR) == 0) {
-        apparmor->mode = SC_AA_COMPLAIN;
-    } else if (mode != NULL && strcmp(mode, SC_AA_ENFORCE_STR) == 0) {
-        apparmor->mode = SC_AA_ENFORCE;
-    } else if (mode != NULL && strcmp(mode, SC_AA_MIXED_STR) == 0) {
-        apparmor->mode = SC_AA_MIXED;
-    } else if (mode != NULL && strcmp(mode, SC_AA_KILL_STR) == 0) {
-        apparmor->mode = SC_AA_KILL;
-    } else {
-        apparmor->mode = SC_AA_INVALID;
+        // Use aa_getcon() to check the label of the current process and
+        // confinement type. Note that the returned label must be released with
+        // free() but the mode is a constant string that must not be freed.
+        char *label SC_CLEANUP(sc_cleanup_string) = NULL;
+        char *mode = NULL;
+        if (aa_getcon(&label, &mode) < 0) {
+            die("cannot query current apparmor profile");
+        }
+        debug("apparmor label on snap-confine is: %s", label);
+        debug("apparmor mode is: %s", mode);
+        // expect to be confined by a profile with the name of a valid
+        // snap-confine binary since if not we may be executed under a
+        // profile with more permissions than expected
+        bool confined_mode = sc_streq(mode, SC_AA_ENFORCE_STR) || sc_streq(mode, SC_AA_KILL_STR);
+        if (label != NULL && confined_mode && sc_is_expected_path(label)) {
+            apparmor->is_confined = true;
+        } else {
+            apparmor->is_confined = false;
+        }
+        // There are several possible results for the confinement type (mode) that
+        // are checked for below.
+        if (mode != NULL && strcmp(mode, SC_AA_COMPLAIN_STR) == 0) {
+            apparmor->mode = SC_AA_COMPLAIN;
+        } else if (mode != NULL && strcmp(mode, SC_AA_ENFORCE_STR) == 0) {
+            apparmor->mode = SC_AA_ENFORCE;
+        } else if (mode != NULL && strcmp(mode, SC_AA_MIXED_STR) == 0) {
+            apparmor->mode = SC_AA_MIXED;
+        } else if (mode != NULL && strcmp(mode, SC_AA_KILL_STR) == 0) {
+            apparmor->mode = SC_AA_KILL;
+        } else {
+            apparmor->mode = SC_AA_INVALID;
+        }
     }
 #else
     apparmor->mode = SC_AA_NOT_APPLICABLE;
@@ -115,23 +115,22 @@ void sc_init_apparmor_support(struct sc_apparmor *apparmor) {
 
 void sc_maybe_aa_change_onexec(struct sc_apparmor *apparmor, const char *profile) {
 #ifdef HAVE_APPARMOR
-    if (apparmor->mode == SC_AA_NOT_APPLICABLE) {
-        return;
-    }
-    debug("requesting changing of apparmor profile on next exec to %s", profile);
-    if (aa_change_onexec(profile) < 0) {
-        /* Save errno because secure_getenv() can overwrite it */
-        int aa_change_onexec_errno = errno;
-        if (secure_getenv("SNAPPY_LAUNCHER_INSIDE_TESTS") == NULL) {
-            errno = aa_change_onexec_errno;
-            if (errno == ENOENT) {
-                fprintf(stderr,
-                        "missing profile %s.\n"
-                        "Please make sure that the snapd.apparmor service is enabled and started\n",
-                        profile);
-                exit(1);
-            } else {
-                die("cannot change profile for the next exec call");
+    if (apparmor->mode != SC_AA_NOT_APPLICABLE) {
+        debug("requesting changing of apparmor profile on next exec to %s", profile);
+        if (aa_change_onexec(profile) < 0) {
+            /* Save errno because secure_getenv() can overwrite it */
+            int aa_change_onexec_errno = errno;
+            if (secure_getenv("SNAPPY_LAUNCHER_INSIDE_TESTS") == NULL) {
+                errno = aa_change_onexec_errno;
+                if (errno == ENOENT) {
+                    fprintf(stderr,
+                            "missing profile %s.\n"
+                            "Please make sure that the snapd.apparmor service is enabled and started\n",
+                            profile);
+                    exit(1);
+                } else {
+                    die("cannot change profile for the next exec call");
+                }
             }
         }
     }
