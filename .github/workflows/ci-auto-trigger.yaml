@@ -2,8 +2,6 @@ name: Auto Rerun Approved PRs
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '*/20 * * * *'
 
 permissions:
   contents: read
@@ -12,12 +10,17 @@ permissions:
 
 jobs:
   scan-open-prs:
+    if: >-
+      github.repository == 'Rnfudge02/snapd' &&
+      github.ref == 'refs/heads/throwaway-test-predictor' &&
+      vars.PREDICTOR_SMOKE_CONTROLLER == 'scanner'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
       EXECUTION_ID: ${{ github.run_id }}
-      MAX_RUN_ATTEMPTS: 5
+      MAX_RUN_ATTEMPTS: 2
       MAX_FAILED_TASKS: 30
     steps:
       - name: Checkout code
@@ -65,10 +68,10 @@ jobs:
           fi
 
           # Fetch all open PRs and inspect them for rerun eligibility
-          prs=$(gh_retry pr list --state open --limit 200 --json number,isDraft,labels,headRefOid,reviews,baseRefName,updatedAt)
+          prs=$(gh_retry pr list --state open --base throwaway-test-predictor --limit 200 --json number,isDraft,labels,headRefName,headRefOid,reviews,baseRefName,updatedAt)
           echo "Inspecting $(echo "$prs" | jq 'length') open PRs for rerun..."
 
-          echo "$prs" | jq -c '.[]' | while read -r pr; do
+          echo "$prs" | jq -c '.[] | select(.headRefName | startswith("predictor-fixture/"))' | while read -r pr; do
             pr_number=$(echo "$pr" | jq -r '.number')
             head_sha=$(echo "$pr" | jq -r '.headRefOid')
             pr_updated_at=$(echo "$pr" | jq -r '.updatedAt // empty')
@@ -88,7 +91,7 @@ jobs:
 
             # Check for general PR eligibility (draft status, required labels, reviews, etc.) before doing any more expensive operations
             echo "PR #$pr_number | Step: eligibility checks"
-            if ! pr_is_rerun_eligible "$pr" 2 false; then
+            if ! pr_is_rerun_eligible "$pr" 0 false; then
               echo "PR #$pr_number | Skip: $NOT_RERUN_REASON"
               echo "----- End PR #$pr_number -----"
               continue

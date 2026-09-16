@@ -3,20 +3,27 @@ name: Spread tests results PR commenter
 on:
   workflow_run:
     workflows: [Tests]
+    branches: ['predictor-fixture/**']
     types:
       - completed
 
 jobs:
   report-spread-failures:
-    if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion != 'cancelled' }}
-    runs-on: [self-hosted, spread-enabled]
+    if: >-
+      github.repository == 'Rnfudge02/snapd' &&
+      github.ref == 'refs/heads/throwaway-test-predictor' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
     permissions:
+      actions: read
       contents: read
       pull-requests: write
     env:
       GH_TOKEN: ${{ github.token }}
       TEST_PREDICTOR_THRESHOLD: "0.3"
-      TEST_PREDICTOR_URL: http://test-predictor.snapd.canonical.com:5000
+      PREDICTOR_SMOKE_MODE: ${{ vars.PREDICTOR_SMOKE_MODE || 'deny' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -125,7 +132,7 @@ jobs:
 
       - name: Echo collected output
         run: |
-          bash -x .github/scripts/test-predictor-reporter.sh \
+          python3 .github/scripts/fork-predictor-report.py \
             "${{ github.repository }}" \
             "${{ github.event.workflow_run.id }}" \
             "${{ github.event.workflow_run.run_attempt }}"
